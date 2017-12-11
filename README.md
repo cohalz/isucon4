@@ -1,3 +1,10 @@
+
+#setup
+```
+chmod +x setup.sh
+./setup.sh
+```
+
 # ISUCON4 problems
 
 - [qualifier](./qualifier)
