@@ -11,6 +11,7 @@ sudo rm /etc/my.cnf
 sudo ln -s /home/isucon/isucon4/settings/my.cnf /etc/my.cnf
 sudo rm /etc/supervisord.conf 
 sudo ln -s /home/isucon/isucon4/settings/supervisord.conf /etc/supervisord.conf
-ps aux | grep foreman | grep -v grep | awk '{ print "kill -9", $2 }' | sh
-sudo /etc/init.d/supervisord restart
+sudo /etc/init.d/supervisord stop
+ps aux | grep foreman | grep -v grep | awk '{ print "kill ", $2 }' | sh
+sudo /etc/init.d/supervisord start
 sudo ln -s /home/isucon/benchmarker /home/isucon/isucon4/benchmarker
