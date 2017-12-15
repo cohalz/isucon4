@@ -13,3 +13,6 @@ mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/schema.sql
 mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} -e "alter table login_log add index ip (ip), add index user_id (user_id);"
 mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/dummy_users.sql
 mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/dummy_log.sql
+
+#ipもuser_idもwhere句で頻繁に参照されるためindexが効果的
+#ただし同時に検索してはいないのでマルチカラムインデックスは意味がない
