@@ -109,13 +109,6 @@ func attemptLogin(req *http.Request, ipsMap *map[string]int, lockedMap *map[int]
 	}
 
 
-	if user == nil {
-		return nil, ErrUserNotFound
-	}
-
-	if user.PasswordHash != calcPassHash(password, user.Salt) {
-		return nil, ErrWrongPassword
-	}
 
 	if _, banned := (*ipsMap)[remoteAddr]; banned {
 	        (*ipsMap)[remoteAddr]++
@@ -139,6 +132,13 @@ func attemptLogin(req *http.Request, ipsMap *map[string]int, lockedMap *map[int]
 	    return nil, ErrLockedUser
 	}
 
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	if user.PasswordHash != calcPassHash(password, user.Salt) {
+		return nil, ErrWrongPassword
+	}
 	succeeded = true
 	return user, nil
 }
