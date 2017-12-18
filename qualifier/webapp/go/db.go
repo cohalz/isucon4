@@ -79,7 +79,7 @@ func isBannedIP(ip string) (bool, error) {
 	return IPBanThreshold <= int(ni.Int64), nil
 }
 
-func attemptLogin(req *http.Request) (*User, error) {
+func attemptLogin(req *http.Request, ipsMap *map[string]int, lockedMap *map[int]int) (*User, error) {
 	succeeded := false
 	user := &User{}
 
@@ -108,13 +108,6 @@ func attemptLogin(req *http.Request) (*User, error) {
 		return nil, err
 	}
 
-	if banned, _ := isBannedIP(remoteAddr); banned {
-		return nil, ErrBannedIP
-	}
-
-	if locked, _ := isLockedUser(user); locked {
-		return nil, ErrLockedUser
-	}
 
 	if user == nil {
 		return nil, ErrUserNotFound
@@ -122,6 +115,28 @@ func attemptLogin(req *http.Request) (*User, error) {
 
 	if user.PasswordHash != calcPassHash(password, user.Salt) {
 		return nil, ErrWrongPassword
+	}
+
+	if _, banned := (*ipsMap)[remoteAddr]; banned {
+	        (*ipsMap)[remoteAddr]++
+		return nil, ErrBannedIP
+	}
+
+
+
+	if banned, _ := isBannedIP(remoteAddr); banned {
+	    (*ipsMap)[remoteAddr]++
+	    return nil, ErrBannedIP
+	}
+
+        if _, banned := (*lockedMap)[user.ID]; banned {
+		    (*lockedMap)[user.ID]++
+		    return nil, ErrLockedUser
+	}
+
+	if banned, _ := isLockedUser(user); banned {
+	    (*lockedMap)[user.ID]++
+	    return nil, ErrLockedUser
 	}
 
 	succeeded = true

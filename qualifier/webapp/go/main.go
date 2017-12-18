@@ -47,7 +47,8 @@ func init() {
 
 func main() {
 	m := martini.Classic()
-
+	ipsMap := map[string]int{}
+	lockedMap := map[int]int{}
 	store := sessions.NewCookieStore([]byte("secret-isucon"))
 	m.Use(sessions.Sessions("isucon_go_session", store))
 
@@ -61,7 +62,7 @@ func main() {
 	})
 
 	m.Post("/login", func(req *http.Request, r render.Render, session sessions.Session) {
-		user, err := attemptLogin(req)
+		user, err := attemptLogin(req, &ipsMap, &lockedMap)
 
 		notice := ""
 		if err != nil || user == nil {
