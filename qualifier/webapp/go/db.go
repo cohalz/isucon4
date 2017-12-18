@@ -14,10 +14,13 @@ var (
 	ErrWrongPassword = errors.New("Wrong password")
 )
 
-func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error {
+func createLoginLog(succeeded bool, remoteAddr, login string, user *User,  ipsMap *map[string]int, lockedMap *map[int]int) error {
 	succ := 0
 	if succeeded {
 		succ = 1
+	} else {
+		(*ipsMap)[remoteAddr]++
+		(*lockedMap)[user.ID]++
 	}
 
 	var userId sql.NullInt64
@@ -25,7 +28,6 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User) error 
 		userId.Int64 = int64(user.ID)
 		userId.Valid = true
 	}
-
 	_, err := db.Exec(
 		"INSERT INTO login_log (`created_at`, `user_id`, `login`, `ip`, `succeeded`) "+
 			"VALUES (?,?,?,?,?)",
@@ -92,7 +94,7 @@ func attemptLogin(req *http.Request, ipsMap *map[string]int, lockedMap *map[int]
 	}
 
 	defer func() {
-		createLoginLog(succeeded, remoteAddr, loginName, user)
+		createLoginLog(succeeded, remoteAddr, loginName, user, ipsMap, lockedMap)
 	}()
 
 	row := db.QueryRow(
@@ -108,37 +110,6 @@ func attemptLogin(req *http.Request, ipsMap *map[string]int, lockedMap *map[int]
 		return nil, err
 	}
 
-
-
-	ipCount, bannedIP := (*ipsMap)[remoteAddr]
-        userCount, lockedUser := (*lockedMap)[user.ID]
-
-	if bannedIP {
-
-	    if ipCount > 0 {
-	        (*ipsMap)[remoteAddr]++
-	        return nil, ErrBannedIP
-	    }
-	} else {
-	    if banned, _ := isBannedIP(remoteAddr); banned {
-	        (*ipsMap)[remoteAddr]++
-	        return nil, ErrBannedIP
-	    }
-	}
-
-        if lockedUser {
-
-            if userCount > 0 {
-                (*lockedMap)[user.ID]++
-                return nil, ErrLockedUser
-            }
-        } else {
-            if banned, _ := isLockedUser(user); banned {
-                (*lockedMap)[user.ID]++
-                return nil, ErrLockedUser
-            }
-        }
-
 	if user == nil {
 		return nil, ErrUserNotFound
 	}
@@ -146,6 +117,19 @@ func attemptLogin(req *http.Request, ipsMap *map[string]int, lockedMap *map[int]
 	if user.PasswordHash != calcPassHash(password, user.Salt) {
 		return nil, ErrWrongPassword
 	}
+	    ipCount, ok1 := (*ipsMap)[remoteAddr]
+
+	    if ok1 && IPBanThreshold <= ipCount {
+	        return nil, ErrBannedIP
+	    }
+
+	    userCount, ok2 := (*lockedMap)[user.ID]
+
+	    if ok2 && UserLockThreshold  <= userCount {
+                return nil, ErrLockedUser
+            }
+
+
 	succeeded = true
 	return user, nil
 }
