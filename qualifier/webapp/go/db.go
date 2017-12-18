@@ -110,27 +110,34 @@ func attemptLogin(req *http.Request, ipsMap *map[string]int, lockedMap *map[int]
 
 
 
-	if _, banned := (*ipsMap)[remoteAddr]; banned {
+	ipCount, bannedIP := (*ipsMap)[remoteAddr]
+        userCount, lockedUser := (*lockedMap)[user.ID]
+
+	if bannedIP {
+
+	    if ipCount > 0 {
 	        (*ipsMap)[remoteAddr]++
-		return nil, ErrBannedIP
+	        return nil, ErrBannedIP
+	    }
+	} else {
+	    if banned, _ := isBannedIP(remoteAddr); banned {
+	        (*ipsMap)[remoteAddr]++
+	        return nil, ErrBannedIP
+	    }
 	}
 
+        if lockedUser {
 
-
-	if banned, _ := isBannedIP(remoteAddr); banned {
-	    (*ipsMap)[remoteAddr]++
-	    return nil, ErrBannedIP
-	}
-
-        if _, banned := (*lockedMap)[user.ID]; banned {
-		    (*lockedMap)[user.ID]++
-		    return nil, ErrLockedUser
-	}
-
-	if banned, _ := isLockedUser(user); banned {
-	    (*lockedMap)[user.ID]++
-	    return nil, ErrLockedUser
-	}
+            if userCount > 0 {
+                (*lockedMap)[user.ID]++
+                return nil, ErrLockedUser
+            }
+        } else {
+            if banned, _ := isLockedUser(user); banned {
+                (*lockedMap)[user.ID]++
+                return nil, ErrLockedUser
+            }
+        }
 
 	if user == nil {
 		return nil, ErrUserNotFound
