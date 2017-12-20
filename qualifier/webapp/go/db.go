@@ -18,6 +18,8 @@ func createLoginLog(succeeded bool, remoteAddr, login string, user *User,  ipsMa
 	succ := 0
 	if succeeded {
 		succ = 1
+		(*ipsMap)[remoteAddr] = 0
+		(*lockedMap)[user.ID] = 0
 	} else {
 		(*ipsMap)[remoteAddr]++
 		(*lockedMap)[user.ID]++
